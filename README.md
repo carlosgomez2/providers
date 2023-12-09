@@ -4,8 +4,8 @@ This is a demo app for the **Webhooks** excercise
 
 Endpoints:
 
-- /paypool
-- /strike
+- http://127.0.0.1:4567/paypool
+- http://127.0.0.1:4567/strike
 
 run with this command:
 
