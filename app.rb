@@ -1,8 +1,12 @@
+# frozen_string_literal: true
+
 require 'sinatra'
 require 'json'
-require 'typhoeus'
+require 'active_job'
+require_relative 'jobs/webhook_job'
 
-WEBHOOK_URL = 'localhost:3000/webhooks/transactions'.freeze
+PAYPOOL_WEBHOOK_URL = 'http://localhost:3000/webhooks/paypool'
+STRIKE_WEBHOOK_URL = 'http://localhost:3000/webhooks/strike'
 
 # Paypool endpoint to process JSON POST request
 post '/paypool' do
@@ -10,9 +14,8 @@ post '/paypool' do
   request.body.rewind
   data = JSON.parse(request.body.read)
   data['status'] = 'paid'
-  request = respond_webhook(data)
-  puts request.body
-  "response_code: #{request.response_code}"
+  WebhookJob.perform_later(data, PAYPOOL_WEBHOOK_URL)
+  'OK'
 end
 
 # Strike endpoint to process JSON POST request
@@ -21,17 +24,6 @@ post '/strike' do
   request.body.rewind
   data = JSON.parse(request.body.read)
   data['status'] = 'paid'
-  request = respond_webhook(data)
-  puts request.body
-  "response_code: #{request.response_code}"
-end
-
-def respond_webhook(payload)
-  options = {
-    method: :post,
-    headers: { 'Content-Type' => 'application/json' },
-    body: payload.to_json
-  }
-  request = Typhoeus::Request.new(WEBHOOK_URL, options)
-  request.run
+  WebhookJob.perform_later(data, STRIKE_WEBHOOK_URL)
+  'OK'
 end
